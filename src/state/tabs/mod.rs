@@ -14,7 +14,6 @@ pub enum TabPage {
 #[allow(dead_code)]
 pub struct App {
   pub current_tab: TabPage,
-  pub render_new: bool,
   pub text: String,
 }
 
@@ -23,18 +22,19 @@ impl App {
   pub fn new() -> App {
     App {
       current_tab: HomePage,
-      render_new: true,
       text: "".to_string(),
     }
   }
 
-  fn draw(&self, terminal: &mut DefaultTerminal) -> std::result::Result<(), Box<dyn Error>> {
+  fn draw(&mut self, terminal: &mut DefaultTerminal) -> std::result::Result<(), Box<dyn Error>> {
     loop {
       terminal.draw(|frame| self.render(frame))?;
       match crate::keys::init::handle_input()? {
         Action::Quit => break,
         Action::GoToHomePage => todo!(),
-        Action::GoToHelpPage => todo!(),
+        Action::GoToHelpPage => {
+          self.current_tab = TabPage::HelpPage;
+        }
         Action::None => continue,
       }
     }
@@ -42,12 +42,17 @@ impl App {
   }
 
   fn render(&self, frame: &mut Frame) {
-    if self.render_new {
-      App::render_homepage(frame);
+    match self.current_tab {
+      TabPage::HomePage => {
+        App::render_homepage(frame);
+      }
+      TabPage::HelpPage => {
+
+      }
     }
   }
 
-  pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+  pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     ratatui::run(|terminal| self.draw(terminal))?;
     Ok(())
   }
