@@ -31,7 +31,9 @@ impl App {
       terminal.draw(|frame| self.render(frame))?;
       match crate::keys::init::handle_input()? {
         Action::Quit => break,
-        Action::GoToHomePage => todo!(),
+        Action::GoToHomePage => {
+          self.current_tab = TabPage::HomePage;
+        },
         Action::GoToHelpPage => {
           self.current_tab = TabPage::HelpPage;
         }
@@ -47,7 +49,7 @@ impl App {
         App::render_homepage(frame);
       }
       TabPage::HelpPage => {
-
+        App::render_help_page(frame); 
       }
     }
   }

@@ -6,7 +6,9 @@ pub fn handle_input() -> std::result::Result<Action, Box<dyn Error>> {
     match key.code {
       KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => return Ok(Action::Quit),
 
-      KeyCode::Char('h') => return Ok(Action::GoToHelpPage),
+      KeyCode::Char('?') => return Ok(Action::GoToHelpPage),
+
+      KeyCode::Char('h') => return Ok(Action::GoToHomePage),
       _ => {}
     }
   }
