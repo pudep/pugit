@@ -11,7 +11,7 @@ impl App {
     let [homepage] = ratatui::layout::Layout::vertical([Constraint::Fill(1)]).areas(frame.area());
 
     frame.render_widget(
-      Paragraph::new("This is the Homepage").block(Block::new().borders(Borders::ALL)),
+      Paragraph::new("This is the Homepage").block(Block::new().borders(Borders::ALL).title("Home Page")),
       homepage,
     );
   }
@@ -20,7 +20,7 @@ impl App {
       ratatui::layout::Layout::vertical([layout::Constraint::Fill(1)]).areas(frame.area());
     frame.render_widget(
       ratatui::widgets::Paragraph::new("This is the Help Page")
-        .block(ratatui::widgets::Block::new().borders(ratatui::widgets::Borders::ALL)),
+        .block(ratatui::widgets::Block::new().borders(ratatui::widgets::Borders::ALL).title("Help Page")),
       help_page,
     );
   }

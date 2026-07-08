@@ -9,8 +9,7 @@ struct Cli {
 
 pub fn parser(){
   let cli = Cli::parse();
-  match cli.config {
-    Some(cfg) => {println!("{cfg}")},
-    None => {},
+  if let Some(cfg) = cli.config {
+    println!("{cfg}")
   }
 }
