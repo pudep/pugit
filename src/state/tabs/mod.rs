@@ -1,10 +1,9 @@
+pub mod draw;
 pub mod menu;
-pub mod render;
 use std::error::Error;
 
 use ratatui::{
-  DefaultTerminal, Frame,
-  widgets::{Block, Borders, List},
+  DefaultTerminal,
 };
 
 use crate::state::tabs::menu::Menu;
@@ -38,18 +37,10 @@ impl App {
     loop {
       match self.current_tab {
         TabPage::HomePage => {
-          let mut state = ratatui::widgets::ListState::default();
-          state.select(Some(self.menu.selected));
-          terminal.draw(|frame| {
-            let list = List::new(self.menu.items.iter().copied())
-              .block(Block::new().borders(Borders::ALL).title("Menu"))
-              .highlight_style(ratatui::style::Style::default().bg(ratatui::style::Color::Cyan))
-              .highlight_symbol("> ");
-            frame.render_stateful_widget(list, frame.area(), &mut state);
-          })?;
+          self.draw_home_page(terminal)?;
         }
         TabPage::HelpPage => {
-          terminal.draw(|frame| self.render(frame))?;
+          self.draw_help_page(terminal)?;
         }
       }
       match crate::keys::init::handle_input(self)? {
@@ -66,16 +57,6 @@ impl App {
     Ok(())
   }
 
-  fn render(&self, frame: &mut Frame) {
-    match self.current_tab {
-      TabPage::HomePage => {
-        App::render_homepage(frame);
-      }
-      TabPage::HelpPage => {
-        App::render_help_page(frame);
-      }
-    }
-  }
 
   pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     ratatui::run(|terminal| self.draw(terminal))?;
