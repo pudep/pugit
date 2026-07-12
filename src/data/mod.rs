@@ -1,10 +1,18 @@
 use anyhow::Context;
-use git2::{Repository, RepositoryState};
+use git2::{ErrorCode, Repository, RepositoryState};
 use std::{
   error::Error,
   path::{Path, PathBuf},
   result,
 };
+
+#[derive(Debug)]
+enum HeadState {
+  Detached(String),
+  Branch(String),
+  Error(String),
+  Unborn,
+}
 
 #[allow(dead_code)]
 pub struct GitHealth {
@@ -36,12 +44,19 @@ impl GitHealth {
     Ok(repo)
   }
 
-  fn resolve_head(repo: &Repository) -> result::Result<(), Box<dyn Error>>{
-    if repo.head_detached()? {
-      "Repo HEAD is detached";
-    }else repo.head()? {
-      
-    }
+  fn resolve_head(repo: &Repository) -> result::Result<(), Box<dyn Error>> {
+    let head = repo.head();
+    let resolved_head = match head {
+      Ok(head) => {
+        if repo.head_detached()? {
+          HeadState::Detached(head.target().unwrap().to_string())
+        } else {
+          HeadState::Branch(head.shorthand().unwrap_or("unkown").to_string())
+        }
+      }
+      Err(e) if e.code() == ErrorCode::UnbornBranch => HeadState::Unborn,
+      Err(e) => HeadState::Error(e.to_string()),
+    };
     Ok(())
   }
 
