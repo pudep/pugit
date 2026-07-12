@@ -30,6 +30,8 @@ pub struct GitHealth {
 
 #[allow(dead_code)]
 impl GitHealth {
+  /// Parses the repo path string to Path by expanding 
+  /// all the enviromental variables.
   fn repo_path_parser(path_string: &str) -> anyhow::Result<PathBuf> {
     let expanded = shellexpand::full(path_string)
       .with_context(|| format!("failed to expand path: `{path_string}`"))?;
@@ -69,33 +71,5 @@ impl GitHealth {
     Ok(head_state)
   }
 
-  fn get_head_status(repo: &Repository) -> String {
-    let head = match repo.head() {
-      Ok(head) => head,
-      Err(error) => return error.to_string(),
-    };
-    match repo.head_detached() {
-      Ok(true) => match head.target() {
-        Some(oid) => format!("detached @{}", oid),
-        None => "detached (no target)".to_string(),
-      },
-      Ok(false) => head.shorthand().unwrap_or("unkown").to_string(),
-      Err(error) => error.to_string(),
-    }
-  }
 
-  fn get_branch(
-    repo: &Repository,
-    branch_name: &str,
-  ) -> std::result::Result<std::string::String, Box<dyn Error>> {
-    let branch = repo.find_branch(branch_name, git2::BranchType::Remote)?;
-    match branch.name() {
-      Ok(Some(name)) => Ok(name.to_string()),
-      Ok(None) => Ok(format!(
-        "Invalid utf string for branch name: {}",
-        branch_name
-      )),
-      Err(e) => Ok(format!("Error : {}", e)),
-    }
-  }
 }
