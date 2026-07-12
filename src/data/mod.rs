@@ -44,20 +44,29 @@ impl GitHealth {
     Ok(repo)
   }
 
-  fn resolve_head(repo: &Repository) -> result::Result<(), Box<dyn Error>> {
+  /// This method returns enum `HeadState` and will fail gracefully.
+  /// Check enum `HeadState` to know what it returns.
+  fn head_state(repo: &Repository) -> result::Result<HeadState, Box<dyn Error>> {
     let head = repo.head();
-    let resolved_head = match head {
+    let head_state = match head {
       Ok(head) => {
+        // detached head points to a commit (oid)
         if repo.head_detached()? {
           HeadState::Detached(head.target().unwrap().to_string())
-        } else {
+        }
+        // attached head points to a branch 
+        // if there is a branch unwrap the name or else return "unkown"
+        else {
           HeadState::Branch(head.shorthand().unwrap_or("unkown").to_string())
         }
       }
+      // To handle the unborn branch case 
       Err(e) if e.code() == ErrorCode::UnbornBranch => HeadState::Unborn,
+
+      // To display a serious error
       Err(e) => HeadState::Error(e.to_string()),
     };
-    Ok(())
+    Ok(head_state)
   }
 
   fn get_head_status(repo: &Repository) -> String {
