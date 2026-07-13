@@ -1,5 +1,5 @@
 use anyhow::Context;
-use git2::{Branch, ErrorCode, Repository, RepositoryState};
+use git2::{Branch, ErrorCode, Repository};
 use std::{
   error::Error,
   path::{Path, PathBuf},
@@ -7,39 +7,46 @@ use std::{
 };
 
 #[derive(Debug)]
-enum HeadState {
+/// This enum tells/holds one of the following listed values:
+/// 1. Detached(type: String)
+/// 2. Branch(type: String)
+/// 3. Error(type: String)
+/// 4. Unborn( type less I handle this case as a token/bool )
+/// Method to get it : Git::get_head_state()
+pub enum HeadState {
   Detached(String),
   Branch(String),
   Error(String),
   Unborn,
 }
 
-enum Upstream {
+/// It holds Remote's oid or error 
+/// It fetches the oid if HeadState::Branch(name) contains some local branch name.
+/// It uses the raw shorthand of the `Branch(name)` to fetch oid of the latest pushed commit.
+///
+/// State of use : May be unnecessary
+pub enum Remote {
   Oid(String),
   Error(String),
 }
 
-enum LocalBranch<'repo>{
+/// This is only valid as long as the Repository is
+/// Must not be stored into struct as it can stale if Branch is suddenly changed 
+/// Holds either of a `Branch<'repo>` or `Error: String`
+pub enum LocalBranch<'repo> {
   Branch(Branch<'repo>),
   Error(String),
 }
 
 #[allow(dead_code)]
-pub struct GitHealth {
-  pub branch: String,
-  pub detached: bool,
-  pub staged: usize,
-  pub unstaged: usize,
-  pub untracked: usize,
-  pub conflicts: usize,
-  pub ahead: usize,
-  pub behind: usize,
-  pub state: RepositoryState,
-  pub stash_count: usize,
+/// The core Git structure that holds lifelong and expensive to recalculate variables.
+pub struct Git {
+  repo: Repository,
+
 }
 
 #[allow(dead_code)]
-impl GitHealth {
+impl Git {
   /// Parses the repo path string to Path by expanding
   /// all the enviromental variables.
   /// Status : Accurate and Tested.
@@ -89,20 +96,20 @@ impl GitHealth {
   /// Status : Not tested tested yet (theorretical only)
   fn get_local_branch<'repo>(repo: &'repo Repository, head_state: HeadState) -> LocalBranch<'repo> {
     match head_state {
-      HeadState::Branch(name) => {
-        match repo.find_branch(&name, git2::BranchType::Local) {
-          Ok(b) => LocalBranch::Branch(b),
-          Err(e) => LocalBranch::Error(e.to_string()),
-        }
-      }
-      _ => LocalBranch::Error("No such LocalBranch found for HeadState::Branch(name)".to_string())
+      HeadState::Branch(name) => match repo.find_branch(&name, git2::BranchType::Local) {
+        Ok(b) => LocalBranch::Branch(b),
+        Err(e) => LocalBranch::Error(e.to_string()),
+      },
+      _ => LocalBranch::Error("No such LocalBranch found for HeadState::Branch(name)".to_string()),
     }
   }
 
+  /// This function gets remote oid 
+  /// Must be treated as a temporary value.
   fn get_remote_oid() {
     let upstream = match local_branch.upstream() {
-      Ok(local_branch) => Upstream::Oid(local_branch.get().target().unwrap().to_string()),
-      Err(e) => Upstream::Error(e.to_string()),
+      Ok(local_branch) => Remote::Oid(local_branch.get().target().unwrap().to_string()),
+      Err(e) => Remote::Error(e.to_string()),
     };
   }
 }
