@@ -37,7 +37,7 @@ pub enum LocalBranch<'repo> {
 #[allow(dead_code)]
 /// The core Git structure that holds lifelong and expensive to recalculate variables.
 pub struct Git {
-  repo: Repository,
+  pub repo: Repository,
 }
 
 #[allow(dead_code)]
@@ -52,7 +52,7 @@ impl Git {
 #[allow(dead_code)]
 impl Git {
   /// Parses String into PathBuf via Shellexpand
-  /// Status : Accurate and Tested.
+  /// Status : Accurate and Tested by `ipude`
   fn string_to_path(path_string: &str) -> anyhow::Result<PathBuf> {
     let expanded = shellexpand::full(path_string)
       .with_context(|| format!("failed to expand path: `{path_string}`"))?;
@@ -64,13 +64,13 @@ impl Git {
   }
 
   /// Retuns enum `HeadState`
-  /// Status : Accurate and Tested.
-  fn get_head_state(repo: &Repository) -> HeadState {
+  /// Status: Accurate and Tested by `ipude`
+  pub fn get_head_state(repo: &Repository) -> HeadState {
     match repo.head() {
       // A head (latest commit) can point either to a Branch say Main or to a commit(only if is detached) so :
       Ok(head) => {
         if head.is_branch() {
-          return HeadState::Branch(head.shorthand().unwrap().to_string());
+          HeadState::Branch(head.shorthand().unwrap().to_string())
         } else {
           match head.target() {
             Some(oid) => HeadState::Detached(oid),
@@ -78,7 +78,7 @@ impl Git {
           }
         }
       }
-      // This is done to tell user that the Branch is unborn. 
+      // This is done to tell user that the Branch is unborn.
       Err(e) if e.code() == ErrorCode::UnbornBranch => HeadState::Unborn,
 
       // This displays serious to resolve errors.
@@ -100,12 +100,10 @@ impl Git {
     }
   }
 
-  /// This function gets remote oid
-  /// Must be treated as a temporary value.
-  fn get_remote_oid() {
-    let upstream = match local_branch.upstream() {
-      Ok(local_branch) => Remote::Oid(local_branch.get().target().unwrap().to_string()),
-      Err(e) => Remote::Error(e.to_string()),
-    };
-  }
+  // fn get_remote_oid() {
+  //   let upstream = match local_branch.upstream() {
+  //     Ok(local_branch) => Remote::Oid(local_branch.get().target().unwrap().to_string()),
+  //     Err(e) => Remote::Error(e.to_string()),
+  //   };
+  // }
 }
