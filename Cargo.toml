@@ -19,4 +19,3 @@ textwrap = "0.16.2"
 shellexpand = "3.1.2"
 git2 = "0.21.0"
 anyhow = "1.0.103"
-
