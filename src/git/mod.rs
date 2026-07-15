@@ -1,32 +1,31 @@
 use anyhow::Context;
-use git2::{Branch, ErrorCode, Oid, Repository};
+use git2::{Branch, ErrorCode, Oid, Reference, Repository};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
-/// Only returned via `Git::get_head_state()`.
-/// Only One out of all can possess a value.
-pub enum HeadState {
+#[allow(dead_code)]
+/// Used to match the state of HEAD
+pub enum HeadState<'repo> {
+  /// Valid only if head is a branch
+  Refrence(Reference<'repo>),
+  /// Valid only if head is not a branch but available
   Detached(Oid),
-  Branch(String),
+  /// Serious error to display
   Error(String),
+  /// State when Branch is unborn
   Unborn,
 }
 
-/// It holds Remote's oid or error.
-/// It fetches the oid if HeadState::Branch(name) contains some local branch name.
-/// It uses the raw shorthand of the `Branch(name)` to fetch oid of the latest pushed commit.
-///
-/// State of use : May be unnecessary.
+#[allow(dead_code)]
 pub enum Remote {
   Oid(String),
   Error(String),
 }
 
-/// This is only valid as long as the Repository is.
-/// Must not be stored into struct as it can stale if Branch is suddenly changed.
-/// Holds either of a `Branch<'repo>` or `Error: String`.
-pub enum LocalBranch<'repo> {
-  Branch(Branch<'repo>),
+#[allow(dead_code)]
+/// Stores Current (mut) data from Repository
+/// Status : Accurate & Tested by `ipude`
+pub enum Current<'repo> {
+  LocalBranch(Branch<'repo>),
   Error(String),
 }
 
@@ -61,12 +60,12 @@ impl Git {
 
   /// Retuns enum `HeadState`.
   /// Status: Accurate and Tested by `ipude`.
-  pub fn get_head_state(repo: &Repository) -> HeadState {
+  pub fn get_head_state<'repo>(repo: &'repo Repository) -> HeadState<'repo> {
     match repo.head() {
       // A head (latest commit) can point either to a Branch say Main or to a commit(only if is detached) so :
       Ok(head) => {
         if head.is_branch() {
-          HeadState::Branch(head.shorthand().unwrap().to_string())
+          HeadState::Refrence(head)
         } else {
           match head.target() {
             Some(oid) => HeadState::Detached(oid),
@@ -85,13 +84,18 @@ impl Git {
   /// Validity of `Branch<'_>` depends on `Repository`.
   /// Vulnerable to staling.
   /// Status: Unchecked by `ipude`.
-  fn get_local_branch<'repo>(repo: &'repo Repository, head_state: HeadState) -> LocalBranch<'repo> {
+  pub fn get_local_branch<'repo>(
+    repo: &'repo Repository,
+    head_state: &HeadState,
+  ) -> Current<'repo> {
     match head_state {
-      HeadState::Branch(name) => match repo.find_branch(&name, git2::BranchType::Local) {
-        Ok(b) => LocalBranch::Branch(b),
-        Err(e) => LocalBranch::Error(e.to_string()),
-      },
-      _ => LocalBranch::Error("No such LocalBranch found for HeadState::Branch(name)".to_string()),
+      HeadState::Refrence(refrence) => {
+        match repo.find_branch(refrence.shorthand().unwrap(), git2::BranchType::Local) {
+          Ok(b) => Current::LocalBranch(b),
+          Err(e) => Current::Error(e.to_string()),
+        }
+      }
+      _ => Current::Error("The HeadState::Refrence(refrence) was likely invalid".to_string()),
     }
   }
 
