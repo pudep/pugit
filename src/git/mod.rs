@@ -1,39 +1,54 @@
-use anyhow::Context;
-use git2::{Branch, Commit, ErrorCode, Reference, Repository};
-use std::path::{Path, PathBuf};
+use git2::{Branch, Commit, Reference, Repository};
 
+pub mod current;
+pub mod string_to_path;
+
+/// Precidence : 0
+/// Core struct -> holds expensive vars
+/// It can't be life time bounded
 #[allow(dead_code)]
-/// Used to match the state of HEAD
-pub enum HeadState<'repo> {
-  /// Valid only if head is a branch
+pub struct Git {
+  pub repo: Repository,
+}
+
+/// Precidence : 1st
+///   
+/// Refrence() -> current branch's -> head ref
+/// Detached() -> no branch -> commit 
+/// Error() -> Debug Error
+/// Unborn -> Head is Unborn
+#[allow(dead_code)]
+pub enum Head<'repo> {
   Refrence(Reference<'repo>),
-  /// Valid only if head is not a branch but available
   Detached(Commit<'repo>),
-  /// Serious error to display
   Error(String),
-  /// State when Branch is unborn
   Unborn,
 }
 
+/// Precidence: 2nd
+/// If Head::Refrence(reference) -> `Branch<'repo>`
+/// else -> `Error(String)`
 #[allow(dead_code)]
-/// The Remote commit containg enum
+pub enum Local<'repo> {
+  Branch(Branch<'repo>),
+  Error(String),
+}
+
+/// Precidence : 3rd
+/// If `Local::Branch(Branch<'repo>)` -> `Commit<'repo>`.
+/// else -> Error
+#[allow(dead_code)]
 pub enum Upstream<'repo> {
   Commit(Commit<'repo>),
   Error(String),
 }
 
-#[allow(dead_code)]
-/// Stores Current (mut) data from Repository
-/// Status : Accurate & Tested by `ipude`
-pub enum Current<'repo> {
-  LocalBranch(Branch<'repo>),
-  Error(String),
-}
-
-#[allow(dead_code)]
-/// The core Git structure that holds lifelong and expensive to recalculate variables.
-pub struct Git {
-  pub repo: Repository,
+/// Precidence : 4th
+/// Stores enum of Precidence 1, 2 and 3.
+pub struct Current<'repo> {
+  pub head_state: Head<'repo>,
+  pub local_branch: Local<'repo>,
+  pub upstream: Upstream<'repo>,
 }
 
 #[allow(dead_code)]
@@ -42,97 +57,5 @@ impl Git {
     Ok(Self {
       repo: Repository::open(Git::string_to_path(path)?)?,
     })
-  }
-}
-
-#[allow(dead_code)]
-impl Git {
-  /// Parses String into PathBuf via crate:  `Shellexpand`.
-  /// Status : Accurate and Tested by `ipude`.
-  fn string_to_path(path_string: &str) -> anyhow::Result<PathBuf> {
-    let expanded = shellexpand::full(path_string)
-      .with_context(|| format!("failed to expand path: `{path_string}`"))?;
-
-    let canonical = Path::new(expanded.as_ref())
-      .canonicalize()
-      .with_context(|| format!("The expanded path do not exists or is inaccessible : `{expanded}` probably the `{path_string}` is wrong."))?;
-    Ok(canonical)
-  }
-
-  /// Retuns enum `HeadState`.
-  /// Status: Accurate and Tested by `ipude`.
-  pub fn get_current_head<'repo>(
-    repo: &'repo Repository,
-  ) -> anyhow::Result<HeadState<'repo>, anyhow::Error> {
-    match repo.head() {
-      // A head (latest commit) can point either to a Branch say Main or to a commit(only if is detached) so :
-      Ok(head) => {
-        if head.is_branch() {
-          Ok(HeadState::Refrence(head))
-        } else {
-          match head.target() {
-            Some(oid) => Ok(HeadState::Detached(repo.find_commit(oid)?)),
-            None => Ok(HeadState::Error(
-              "Detached HEAD but points to no Commit.".to_string(),
-            )),
-          }
-        }
-      }
-      // This is done to tell user that the Branch is unborn.
-      Err(e) if e.code() == ErrorCode::UnbornBranch => Ok(HeadState::Unborn),
-
-      // This displays serious to resolve errors.
-      Err(e) => Ok(HeadState::Error(e.to_string())),
-    }
-  }
-
-  /// Validity of `Branch<'_>` depends on `Repository`.
-  /// Vulnerable to staling.
-  /// Status: Unchecked by `ipude`.
-  pub fn get_current_local_branch<'repo>(
-    repo: &'repo Repository,
-    head_state: &HeadState,
-  ) -> Current<'repo> {
-    match head_state {
-      HeadState::Refrence(refrence) => {
-        match repo.find_branch(refrence.shorthand().unwrap(), git2::BranchType::Local) {
-          Ok(b) => Current::LocalBranch(b),
-          Err(e) => Current::Error(e.to_string()),
-        }
-      }
-      _ => Current::Error("The HeadState::Refrence(refrence) was likely invalid".to_string()),
-    }
-  }
-
-  /// Get latest oid of the local branch which has been pushed to the underlying remote.
-  pub fn get_oid_current<'repo>(
-    repo: &'repo Repository,
-    current: &Current,
-  ) -> anyhow::Result<Upstream<'repo>, anyhow::Error> {
-    match current {
-      Current::LocalBranch(b) => match b.upstream() {
-        Ok(localbranch) => Ok(Upstream::Commit(
-          repo.find_commit(localbranch.get().target().unwrap())?,
-        )),
-        Err(e) => Ok(Upstream::Error(e.to_string())),
-      },
-      Current::Error(error) => Ok(Upstream::Error(error.to_string())),
-    }
-  }
-
-  /// This will return the `refs/remote/upstream` for current local branch.
-  /// E.g : Local branch -> `main`
-  ///       Upstream -> `origin/main`
-  pub fn get_current_upstream(current: &Current) -> anyhow::Result<String> {
-    match &current {
-      Current::LocalBranch(local_branch) => Ok(
-        local_branch
-          .upstream()?
-          .name()?
-          .unwrap_or("<No Remote>")
-          .to_string(),
-      ),
-      _ => Ok("Nil".to_string()),
-    }
   }
 }
