@@ -120,7 +120,19 @@ impl Git {
     }
   }
 
-  pub fn get_current_upstream() {
-    
+  /// This will return the `refs/remote/upstream` for current local branch.
+  /// E.g : Local branch -> `main`
+  ///       Upstream -> `origin/main`
+  pub fn get_current_upstream(current: &Current) -> anyhow::Result<String> {
+    match &current {
+      Current::LocalBranch(local_branch) => Ok(
+        local_branch
+          .upstream()?
+          .name()?
+          .unwrap_or("<No Remote>")
+          .to_string(),
+      ),
+      _ => Ok("Nil".to_string()),
+    }
   }
 }

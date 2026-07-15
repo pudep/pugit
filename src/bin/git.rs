@@ -11,5 +11,7 @@ fn main() -> anyhow::Result<()> {
     Upstream::Commit(commit) => println!("Oid: {}\nMessage: {}", commit.id(), commit.message()?),
     Upstream::Error(e) => println!("{e}"),
   }
+
+  println!("{}", Git::get_current_upstream(&local_branch)?);
   Ok(())
 }
