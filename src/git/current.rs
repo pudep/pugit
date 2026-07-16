@@ -6,9 +6,7 @@ use crate::git::Git;
 use git2::{ ErrorCode, Repository};
 #[allow(dead_code)]
 impl Git {
-
   /// Retuns enum `Head`.
-  /// Status: Accurate and Tested by `ipude`.
   pub fn get_current_head<'repo>(
     repo: &'repo Repository,
   ) -> anyhow::Result<Head<'repo>, anyhow::Error> {
@@ -36,7 +34,6 @@ impl Git {
 
   /// Validity of `Branch<'_>` depends on `Repository`.
   /// Vulnerable to staling.
-  /// Status: Unchecked by `ipude`.
   pub fn get_current_local_branch<'repo>(
     repo: &'repo Repository,
     head_state: &Head,
@@ -82,5 +79,8 @@ impl Git {
       ),
       _ => Ok("Nil".to_string()),
     }
+  }
+
+  pub fn unk(){
   }
 }

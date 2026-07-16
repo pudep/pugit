@@ -42,14 +42,6 @@ pub enum Upstream<'repo> {
   Error(String),
 }
 
-/// Precidence : 4th
-/// Stores enum of Precidence 1, 2 and 3.
-pub struct Current<'repo> {
-  pub head_state: Head<'repo>,
-  pub local_branch: Local<'repo>,
-  pub upstream: Upstream<'repo>,
-}
-
 #[allow(dead_code)]
 impl Git {
   pub fn new(path: &str) -> anyhow::Result<Self> {
