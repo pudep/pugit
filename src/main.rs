@@ -3,6 +3,7 @@ mod cmd;
 mod git;
 mod keys;
 mod state;
+mod watcher;
 
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
   cmd::parser();

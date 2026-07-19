@@ -1,5 +1,3 @@
-use std::process::id;
-
 use pugit::git::{Git, Upstream};
 
 fn main() -> anyhow::Result<()> {
