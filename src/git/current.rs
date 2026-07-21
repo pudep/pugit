@@ -59,6 +59,9 @@ impl Git {
   ) -> Local<'repo> {
     match head_state {
       Head::Refrence(refrence) => {
+        // We give priority to Local Branch when it comes to look at current branch.
+        // If current branch contains a remote ref then we can later using the name find the remote branch.
+        // Moroever all main code lives on Local hence it worths checking more than Remote.
         match repo.find_branch(refrence.shorthand().unwrap(), git2::BranchType::Local) {
           Ok(b) => Local::Branch(b),
           Err(e) => Local::Error(e.to_string()),
