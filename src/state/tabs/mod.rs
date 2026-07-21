@@ -1,9 +1,9 @@
 pub mod draw;
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 use ratatui::DefaultTerminal;
 
-use crate::{action::navigate::Action, state::tabs::TabPage::HomePage};
+use crate::{action::navigate::Action, state::tabs::TabPage::HomePage, watcher::WatchSignals};
 
 #[allow(dead_code)]
 #[derive(PartialEq)]
@@ -14,17 +14,19 @@ pub enum TabPage {
 
 #[allow(dead_code)]
 pub struct App {
+  pub signal: Arc<WatchSignals>,
   pub current_tab: TabPage,
   pub text: String,
 }
 
 #[allow(dead_code)]
 impl App {
-  pub fn new() -> App {
-    App {
+  pub fn new() -> anyhow::Result<App, anyhow::Error> {
+    Ok(App {
+      signal: WatchSignals::spawn()?,
       current_tab: HomePage,
       text: "".to_string(),
-    }
+    })
   }
 
   fn draw(&mut self, terminal: &mut DefaultTerminal) -> std::result::Result<(), Box<dyn Error>> {
