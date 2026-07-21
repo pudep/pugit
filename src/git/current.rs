@@ -90,13 +90,25 @@ impl Git {
   /// This will return the `refs/remote/upstream` for current local branch.
   /// E.g : Local branch -> `main`
   ///       Upstream -> `origin/main`
-  pub fn get_current_upstream(current: &Local) -> anyhow::Result<String> {
+  /// branch_name.upstream()? tells which Remote branch do Local one is tracking?
+  pub fn get_current_upstream<'repo>(repo: &'repo Repository, current: &Local) -> Upstream<'repo> {
     match &current {
-      Local::Branch(local_branch) => Ok(match local_branch.upstream() {
-        Ok(k) => k.name()?.unwrap_or("<No Remote>").to_string(),
-        Err(e) => e.to_string(),
-      }),
-      _ => Ok("Nil".to_string()),
+      Local::Branch(local_branch) => match local_branch.upstream() {
+        Ok(k) => Upstream::Branch(k),
+        Err(e) => Upstream::Error(e.to_string()),
+      },
+      _ => Upstream::None,
     }
+  }
+
+  pub fn ahead_behind(repo: &Repository, head: &Head, local: &Local) -> anyhow::Result<()> {
+    match &head {
+      Head::Refrence(head) => {
+        let local_oid = head.target().unwrap();
+        let upstream_oid = Git::get_current_upstream(local)?;
+      }
+      _ => {}
+    }
+    Ok(())
   }
 }

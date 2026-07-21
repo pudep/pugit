@@ -54,8 +54,10 @@ pub enum Local<'repo> {
 /// else -> Error
 #[allow(dead_code)]
 pub enum Upstream<'repo> {
+  Branch(Branch<'repo>),
   Commit(Commit<'repo>),
   Error(String),
+  None,
 }
 
 #[allow(dead_code)]
