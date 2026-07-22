@@ -1,5 +1,4 @@
-use git2::{Branch, Commit, Repository};
-
+use git2::Repository;
 use crate::git::head::Head;
 pub mod current;
 pub mod head;
