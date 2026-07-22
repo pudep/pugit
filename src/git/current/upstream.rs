@@ -1,7 +1,6 @@
 use git2::{Branch, Commit, Repository};
 
-use crate::git::Git;
-use crate::git::local::Local;
+use crate::git::{Git, current::local::Local};
 
 #[allow(dead_code)]
 pub enum Upstream<'repo> {

@@ -1,12 +1,8 @@
 use git2::Repository;
-use crate::git::head::Head;
+
+use crate::git::current::head::Head;
 pub mod current;
-pub mod head;
-pub mod local;
-pub mod refresh;
-pub mod repo_state;
 pub mod string_to_path;
-pub mod upstream;
 
 #[allow(dead_code)]
 pub struct Git {

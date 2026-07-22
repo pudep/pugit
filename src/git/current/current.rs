@@ -1,7 +1,7 @@
 use crate::git::Head;
 
 use crate::git::Git;
-use crate::git::local::Local;
+use crate::git::current::local::Local;
 use git2::{ErrorCode, Repository};
 #[allow(dead_code)]
 impl Git {
