@@ -91,7 +91,7 @@ impl Git {
   /// E.g : Local branch -> `main`
   ///       Upstream -> `origin/main`
   /// branch_name.upstream()? tells which Remote branch do Local one is tracking?
-  pub fn get_current_upstream<'repo>(repo: &'repo Repository, current: &Local) -> Upstream<'repo> {
+  pub fn get_current_upstream<'repo>(current: &Local<'repo>) -> Upstream<'repo> {
     match &current {
       Local::Branch(local_branch) => match local_branch.upstream() {
         Ok(k) => Upstream::Branch(k),
@@ -105,7 +105,7 @@ impl Git {
     match &head {
       Head::Refrence(head) => {
         let local_oid = head.target().unwrap();
-        let upstream_oid = Git::get_current_upstream(local)?;
+        let upstream_oid = Git::get_current_upstream(&local);
       }
       _ => {}
     }
