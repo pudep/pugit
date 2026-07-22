@@ -1,21 +1,22 @@
-use git2::{Branch, RepositoryState};
+use git2::Repository;
 
-use crate::git::Git;
+use crate::git::{Git, current::head::Head};
 
 #[allow(dead_code)]
-pub enum Local<'repo> {
-  Branch(Branch<'repo>),
+pub enum Local {
+  Branch(String),
   Error(String),
+  None,
 }
 
 impl Git {
-  pub fn get_current_local_branch<'repo>(&mut self, repo: &'repo RepositoryState) {
-    // if self.check.head.is_head {}
-    // match repo.find_branch(string.shorthand().unwrap(), git2::BranchType::Local) {
-    //   Ok(b) => Local::Branch(b),
-    //   Err(e) => Local::Error(e.to_string()),
-    // }
-    // }
-    // Local::Error("The Head::Refrence(refrence) was likely invalid".to_string()),
+  pub fn get_current_local_branch(head_ref: &Head, repo: &Repository) -> anyhow::Result<Local> {
+    match &head_ref {
+      Head::Refrence(name) => match repo.find_branch(name, git2::BranchType::Local) {
+        Ok(branch) => Ok(Local::Branch(branch.name()?.unwrap().to_string())),
+        Err(e) => Ok(Local::Error(e.to_string())),
+      },
+      _ => Ok(Local::None),
+    }
   }
 }
